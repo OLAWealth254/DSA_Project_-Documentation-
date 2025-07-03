@@ -1,0 +1,175 @@
+----IMPORT CSV FILES INTO DB----
+--KMS_Order.CSV
+-Order_Status.CSV
+
+
+
+
+Select * from [dbo].[KMS_Order]
+
+
+-------Product category with highest sales-------
+
+
+
+SELECT Top 1
+[Product_Category],SUM ([Sales]) AS [Total_Sales]
+ FROM [dbo].[KMS_Order]
+GROUP BY [Product_Category]
+ORDER BY [Total_Sales] DESC;
+
+
+-------What are the Top 3 and Bottom 3 region in terms of sales?-------
+
+
+SELECT Top 3 
+[Region],SUM ([Sales]) AS [Total_Sales]
+FROM KMS_Order
+GROUP BY Region
+ORDER BY Total_Sales DESC;
+
+
+
+SELECT Top 3
+[Region],SUM ([Sales]) AS [Total_Sales]
+FROM KMS_Order
+GROUP BY Region
+ORDER BY Total_Sales ASC;
+
+
+
+-------What were the total sales of appliances in Ontario?-------
+
+
+SELECT SUM ([Sales]) AS [Total_Sales]
+FROM KMS_Order
+WHERE [Region] = 'Ontario'
+AND [Product_Sub_Category] = 'Appliances'
+
+
+----Advise the management of KMS on what to do to increase the revenue from the bottom 10 customers----
+
+
+
+SELECT Top 10
+[Customer_Name],SUM ([Sales]) AS [Total_Sales]
+FROM KMS_Order
+GROUP BY [Customer_Name]
+ORDER BY Total_Sales ASC;
+
+
+-------KMS incurred the most shipping cost using which shipping method?-------
+
+
+
+SELECT [Ship_Mode], SUM ([Shipping_Cost]) AS [Total_Shipping_Cost]
+FROM KMS_Order
+GROUP BY [Ship_Mode]
+ORDER BY Total_Shipping_Cost DESC;
+
+
+
+----Who are the most valuable customers, and what products or services do they typically purchase?--
+
+
+WITH Customer_Sales AS (
+    SELECT 
+        TRIM(UPPER([Customer_Name])) AS Customer_Name,
+        SUM([Sales]) AS Total_Sales
+    FROM KMS_Order
+    GROUP BY TRIM(UPPER([Customer_Name]))
+),
+
+Top_Customers AS (
+    SELECT TOP 10 Customer_Name, Total_Sales
+    FROM Customer_Sales
+    ORDER BY Total_Sales DESC
+),
+
+Customer_Category_Sales AS (
+    SELECT 
+        TRIM(UPPER(o.[Customer_Name])) AS Customer_Name, 
+        o.[Product_Category],
+        SUM(o.[Sales]) AS Category_Sales
+    FROM KMS_Order AS o
+    JOIN Top_Customers AS tc
+        ON TRIM(UPPER(o.[Customer_Name])) = tc.Customer_Name
+    GROUP BY TRIM(UPPER(o.[Customer_Name])), o.[Product_Category]
+)
+
+SELECT 
+    ccs.Customer_Name,
+    ccs.Product_Category,
+    ccs.Category_Sales
+FROM Customer_Category_Sales AS ccs
+ORDER BY ccs.Category_Sales DESC;
+
+-----Which small business customer had the highest sales?  -------
+SELECT Top 1
+[Customer_Name],SUM ([Sales]) AS [Total_Sales]
+FROM KMS_Order
+WHERE [Customer_Segment] = 'Small Business'
+GROUP BY [Customer_Name]
+ORDER BY Total_Sales DESC;
+
+
+-------Which Corporate Customer placed the most number of orders in 2009 - 2012?-------
+
+
+SELECT Top 1
+[Customer_Name],COUNT(DISTINCT [Order_ID]) AS [Order_Count]
+FROM KMS_Order
+WHERE [Customer_Segment] ='Corporate'
+    AND [Order_Date] BETWEEN '2009-01-01' AND '2012-12-31'
+GROUP BY [Customer_Name]
+ORDER BY [Order_Count] DESC;
+
+
+-------Which Consumer Customer was the most profitable one?-------
+
+
+SELECT Top 1
+[Customer_Name],SUM ( Sales - [Shipping_Cost]) AS Profit
+FROM KMS_Order
+WHERE [Customer_Segment] ='Consumer'
+GROUP BY [Customer_Name]
+ORDER BY Profit DESC;
+
+
+-------Which Customer returned items, and what segement do they belong to?-------
+
+
+SELECT DISTINCT
+o. [Customer_Name],[Customer_Segment]
+FROM
+[KMS_Order] AS o
+JOIN
+    [Order_Status] AS os 
+    ON o.Order_ID = os.[Order_ID]
+WHERE
+    os.[Status]  = 'Returned';
+
+
+
+
+-------Was shipping cost appropriately spent based on Order Priority?-------
+
+SELECT 
+    (Order_Priority),
+    (Ship_Mode),
+    COUNT(*) AS Number_Of_Orders,
+    SUM(Shipping_Cost) AS Tota_lShipping_Cost,
+    AVG(Shipping_Cost) AS Avg_Shipping_Cost
+FROM 
+    KMS Case Study 
+GROUP BY 
+    (Order_Priority), (ShipMode)
+ORDER BY 
+    CASE (Order_Priority )
+        WHEN 'Critical' THEN 1
+        WHEN 'High' THEN 2
+        WHEN 'Medium' THEN 3
+        WHEN 'Low' THEN 4
+        ELSE 5
+    END,
+    Ship_Mode;
