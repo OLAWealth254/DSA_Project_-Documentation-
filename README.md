@@ -107,4 +107,7 @@ The most profitable consumer customer was 'Emily Phan' with a profit to contribu
 * Optimize Delivery Truck usuage and negotiate better shipping rates.
 * Monitor Shipping costs and adjust allocation as needed.
 
+
+##### Author 
+Olarewaju Gift 
   
